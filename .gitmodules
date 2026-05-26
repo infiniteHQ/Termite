@@ -1,0 +1,6 @@
+[submodule "lib/vortex"]
+	path = lib/vortex
+	url = https://github.com/infiniteHQ/Vortex
+[submodule "lib/cherry"]
+	path = lib/cherry
+	url = https://github.com/infiniteHQ/Cherry
