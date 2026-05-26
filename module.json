@@ -1,0 +1,20 @@
+{
+    "type": "em",
+    "group": "Basic tools",
+    "name": "infinitehq.termite",
+    "proper_name": "Termite",
+    "auto_exec": true,
+    "version": "1.0.0",
+    "author": "Infinite",
+    "contributors": [
+        "Diego E. Moreno <d@infinite.si>"
+    ],
+    "deps": [
+    ],
+    "compatibility": [
+        "1.0"
+    ],
+    "path": "./libmodule.so",
+    "picture": "./resources/logo.png",
+    "description": "Simple cross platfor terminal emulator"
+}
