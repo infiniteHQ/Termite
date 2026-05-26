@@ -16,5 +16,5 @@
     ],
     "path": "./libmodule.so",
     "picture": "./resources/logo.png",
-    "description": "Simple cross platfor terminal emulator"
+    "description": "Simple cross platform terminal emulator"
 }
