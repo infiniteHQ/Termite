@@ -15,9 +15,9 @@ public:
         ModuleInterface::get_editor_module_by_name(this->name());
 
     // TODO : add_editor_tool()
-    // this->add_content_browser_item_handler(ItemHandlerInterface(
-    //    "file_cpp", Termite::StartTerminal, "Edit", "Edit this C++ file",
-    //    Termite::GetPath("resources/icons/edit.png")));
+    this->set_toolbar_main_title("TT");
+    this->add_toolbar_handler(ToolbarHandlerInterface(
+        Termite::StartTerminal, "Terminal", "Open a cool terminal"));
 
     this->set_credits_file(Termite::GetPath("CREDITS"));
     this->add_documentation("Take the editor", "Edit a txt file",
