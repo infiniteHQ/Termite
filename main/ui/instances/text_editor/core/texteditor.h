@@ -2214,6 +2214,8 @@ public:
       SetProperty("refresh_pending", "false");
     }
 
+    m_TextEditor.SetShowLineNumbersEnabled(false);
+
     m_TextEditor.SetTransactionCallback(
         [this](auto &changes) { this->SetData("text_changed", true); });
 
@@ -2253,25 +2255,6 @@ public:
     if (GetProperty("paste_pending") == "true") {
       m_TextEditor.Paste();
       SetProperty("paste_pending", false);
-    }
-
-    auto language_name = GetProperty("language_name");
-    if (language_name == "C++") {
-      m_TextEditor.SetLanguage(TextEditorInternal::Language::Cpp());
-    } else if (language_name == "C") {
-      m_TextEditor.SetLanguage(TextEditorInternal::Language::C());
-    } else if (language_name == "Lua") {
-      m_TextEditor.SetLanguage(TextEditorInternal::Language::Lua());
-    } else if (language_name == "C#") {
-      m_TextEditor.SetLanguage(TextEditorInternal::Language::Cs());
-    } else if (language_name == "Python") {
-      m_TextEditor.SetLanguage(TextEditorInternal::Language::Python());
-    } else if (language_name == "Sql") {
-      m_TextEditor.SetLanguage(TextEditorInternal::Language::Sql());
-    } else if (language_name == "Markdown") {
-      m_TextEditor.SetLanguage(TextEditorInternal::Language::Markdown());
-    } else if (language_name == "Json") {
-      m_TextEditor.SetLanguage(TextEditorInternal::Language::Json());
     }
 
     if (GetProperty("show_spaces") == "true") {

@@ -11693,7 +11693,7 @@ const TextEditorInternal::Palette &TextEditorInternal::GetDarkPalette() {
       IM_COL32(156, 220, 254, 255), // identifier
       IM_COL32(79, 193, 255, 255),  // known identifier
       IM_COL32(106, 153, 85, 255),  // comment
-      IM_COL32(30, 30, 30, 255),    // background
+      IM_COL32(20, 20, 20, 255),    // background
       IM_COL32(224, 224, 224, 255), // cursor
       IM_COL32(32, 96, 160, 255),   // selection
       IM_COL32(80, 80, 80, 255),    // whitespace

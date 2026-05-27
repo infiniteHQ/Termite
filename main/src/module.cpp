@@ -25,18 +25,9 @@ bool TextEdit::IsValidFile(const std::string &path) {
 }
 
 void TextEdit::StartTextEditorInstance(const std::string &path) {
-  std::string filename = fs::path(path).filename().string();
-
-  const size_t maxLen = 24;
-  if (filename.size() > maxLen) {
-    filename = filename.substr(0, maxLen - 3) + "...";
-  }
-
-  std::string window_name =
-      filename + "####" +
-      std::to_string(CTextEdit->m_text_editor_instances.size());
-
-  auto inst = ModuleUI::TextEditorAppWindow::Create(path, window_name);
+  // TODO: Custom names with dynamic state of terminals (to implement with
+  // Cherry Locales systeme)
+  auto inst = ModuleUI::TextEditorAppWindow::Create(path, "Terminal");
   Cherry::AddAppWindow(inst->GetAppWindow());
   CTextEdit->m_text_editor_instances.push_back(inst);
 }

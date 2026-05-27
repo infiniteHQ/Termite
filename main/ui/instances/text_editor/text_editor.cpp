@@ -60,7 +60,7 @@ TextEditorAppWindow::TextEditorAppWindow(const std::string &path,
 
   m_Type = detect_file(path);
   m_AppWindow = std::make_shared<Cherry::AppWindow>(name, name);
-
+  term.Start();
   DefineWindowIcon();
   m_AppWindow->SetLeftMenubarCallback([this]() { RenderMenubar(); });
   m_AppWindow->SetRightMenubarCallback([this]() { RenderRightMenubar(); });
@@ -219,6 +219,22 @@ void TextEditorAppWindow::RenderMenubar() {
           TextEdit::GetPath("/resources/icons/icon_magnifying_glass.png"))
           .GetDataAs<bool>("isClicked")) {
     m_FindPending = true;
+  }
+
+  CherryNextComponent.SetProperty("padding_y", "6.0f");
+  CherryNextComponent.SetProperty("padding_x", "10.0f");
+  if (CherryKit::ButtonText("ami").GetDataAs<bool>("isClicked")) {
+    term.SendCommand("whoami");
+  }
+  CherryNextComponent.SetProperty("padding_y", "6.0f");
+  CherryNextComponent.SetProperty("padding_x", "10.0f");
+  if (CherryKit::ButtonText("ls").GetDataAs<bool>("isClicked")) {
+    term.SendCommand("ls -la");
+  }
+  CherryNextComponent.SetProperty("padding_y", "6.0f");
+  CherryNextComponent.SetProperty("padding_x", "10.0f");
+  if (CherryKit::ButtonText("pwd").GetDataAs<bool>("isClicked")) {
+    term.SendCommand("pwd");
   }
 }
 
@@ -405,7 +421,6 @@ FileTypes TextEditorAppWindow::detect_file(const std::string &path) {
 void TextEditorAppWindow::RenderCustomMenu() { CherryGUI::Text("Helo"); }
 
 void TextEditorAppWindow::Render() {
-
   vxe::push_custom_menu("TextEdit", [this]() { RenderCustomMenu(); });
 
   CherryApp.PushComponentPool(&m_ComponentPool);
@@ -467,128 +482,189 @@ void TextEditorAppWindow::Render() {
 
   auto test = CherryGUI::GetContentRegionAvail();
 
-  auto &editor = ModuleUI::TextArea(
-      &test.x, &test.y, &m_FileEditBuffer, &m_TextSize, &m_CurrentLine,
-      &m_CurrentColumn, &m_TotalLines, &m_CurrentLanguageDef, &m_CanOverrite);
+  auto avail = CherryGUI::GetContentRegionAvail();
 
-  if (!m_FileUpdated) {
-    if (editor.GetDataAs<bool>("text_changed")) {
-      m_FileEdited = true;
+  Cherry::PushFont("JetBrainsMono");
+  CherryStyle::PushFontSize(m_TextSize);
+
+  ImFont *font = ImGui::GetFont();
+  float fsize = ImGui::GetFontSize();
+  ImVec2 charSz = font->CalcTextSizeA(fsize, FLT_MAX, 0, "M");
+  float charW = charSz.x;
+  float charH = charSz.y + 2.0f;
+
+  int newCols = std::max(1, (int)(avail.x / charW));
+  int newRows = std::max(1, (int)(avail.y / charH));
+  if (newCols != term.cols || newRows != term.rows)
+    term.Resize(newCols, newRows);
+
+  ImVec2 canvasPos = ImGui::GetCursorScreenPos();
+  ImVec2 canvasSize = avail;
+
+  ImDrawList *dl = ImGui::GetWindowDrawList();
+  dl->AddRectFilled(
+      canvasPos, ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + canvasSize.y),
+      IM_COL32(18, 18, 18, 255));
+
+  ImGui::InvisibleButton("##terminal_canvas", canvasSize,
+                         ImGuiButtonFlags_MouseButtonLeft |
+                             ImGuiButtonFlags_MouseButtonRight);
+  bool termFocused = ImGui::IsItemFocused() || ImGui::IsItemActive();
+
+  static bool firstFrame = true;
+  if (firstFrame) {
+    ImGui::SetKeyboardFocusHere(-1);
+    firstFrame = false;
+  }
+
+  if (termFocused && term.IsRunning()) {
+    auto &io = ImGui::GetIO();
+
+    // c
+    if (ImGui::IsKeyDown(ImGuiKey_ModCtrl) &&
+        ImGui::IsKeyPressed(ImGuiKey_C, false))
+      term.SendInterrupt();
+
+    // l
+    else if (ImGui::IsKeyDown(ImGuiKey_ModCtrl) &&
+             ImGui::IsKeyPressed(ImGuiKey_L, false)) {
+      term.SendRaw("\f"); // form feed = clear screen
     }
-  } else {
-    m_FileUpdated = false;
+
+    // entry
+    else if (ImGui::IsKeyPressed(ImGuiKey_Enter) ||
+             ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)) {
+      if (!m_TermInput.empty())
+        term.PushHistory(m_TermInput);
+      term.SendRaw(m_TermInput + "\n");
+      m_TermInput.clear();
+      m_TermScrollToBottom = true;
+    }
+
+    // backspace
+    else if (ImGui::IsKeyPressed(ImGuiKey_Backspace, true)) {
+      if (!m_TermInput.empty()) {
+        m_TermInput.pop_back();
+        term.SendBackspace();
+      }
+    }
+
+    // tab
+    else if (ImGui::IsKeyPressed(ImGuiKey_Tab, false))
+      term.SendRaw("\t");
+
+    // up
+    else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true)) {
+      std::string entry = term.HistoryNavigate(+1);
+      if (!entry.empty()) {
+        for (size_t k = 0; k < m_TermInput.size(); ++k)
+          term.SendBackspace();
+        m_TermInput = entry;
+        term.SendRaw(entry);
+      }
+    }
+
+    // down
+    else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true)) {
+      std::string entry = term.HistoryNavigate(-1);
+      for (size_t k = 0; k < m_TermInput.size(); ++k)
+        term.SendBackspace();
+      m_TermInput = entry;
+      if (!entry.empty())
+        term.SendRaw(entry);
+    }
+
+    // arrows
+    else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow, true))
+      term.SendRaw("\x1B[D");
+    else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow, true))
+      term.SendRaw("\x1B[C");
+
+    for (ImWchar wc : io.InputQueueCharacters) {
+      if (wc >= 32 && wc < 127) {
+        char ch = (char)wc;
+        m_TermInput += ch;
+        term.SendChar(ch);
+      }
+    }
+    io.InputQueueCharacters.resize(0);
   }
 
-  if (m_FileEdited) {
-    this->m_AppWindow->SetSaved(false);
-  } else {
-    this->m_AppWindow->SetSaved(true);
-  }
-
-  // TODO: If not langauge set by the user
-  if (m_Type == FileTypes::File_CPP || m_Type == FileTypes::File_HPP) {
-    editor.SetProperty("language_name", "C++");
-  } else if (m_Type == FileTypes::File_C || m_Type == FileTypes::File_H) {
-    editor.SetProperty("language_name", "C");
-  } else if (m_Type == FileTypes::File_LUA) {
-    editor.SetProperty("language_name", "Lua");
-  } else if (m_Type == FileTypes::File_PYTHON) {
-    editor.SetProperty("language_name", "Python");
-  } else if (m_Type == FileTypes::File_CS) {
-    editor.SetProperty("language_name", "C#");
-  } else if (m_Type == FileTypes::File_JSON) {
-    editor.SetProperty("language_name", "Json");
-  } else if (m_Type == FileTypes::File_SQL) {
-    editor.SetProperty("language_name", "Sql");
-  } else {
-    // TODO : Extend this module languages support to plugins (or modules)
-  }
-
-  if (editor.GetData("save_ready") == "true") {
-    m_SaveReady = true;
-    editor.SetData("save_ready", "false");
-  }
-
-  if (m_SavePending) {
-    editor.SetProperty("save_pending", "true");
-    m_SavePending = false;
-  }
-
-  if (m_UndoPending) {
-    editor.SetProperty("undo_pending", "true");
-    m_UndoPending = false;
-  }
-
-  if (m_FindPending) {
-    editor.SetProperty("find_pending", "true");
-    m_FindPending = false;
-  }
-
-  if (m_RedoPending) {
-    editor.SetProperty("redo_pending", "true");
-    m_RedoPending = false;
-  }
-
-  if (m_CopyPending) {
-    editor.SetProperty("copy_pending", "true");
-    m_CopyPending = false;
-  }
-
-  if (m_PastePending) {
-    editor.SetProperty("paste_pending", "true");
-    m_PastePending = false;
-  }
-
-  if (m_SaveReady) {
-    SaveFile();
-    m_SaveReady = false;
-  }
-
-  if (m_AutoRefresh && !m_FilePath.empty()) {
-    namespace fs = std::filesystem;
-    std::error_code ec;
-    auto currentWriteTime = fs::last_write_time(m_FilePath, ec);
-    if (!ec && currentWriteTime != m_LastWriteTime) {
-      RefreshFile();
-      editor.SetProperty("refresh_pending", "true");
+  // scroll
+  if (ImGui::IsItemHovered()) {
+    float wheel = ImGui::GetIO().MouseWheel;
+    if (wheel != 0.0f) {
+      m_TermScrollY -= wheel * charH * 3.0f;
+      m_TermScrollToBottom = false;
     }
   }
 
-  if (show_spaces_) {
-    editor.SetProperty("show_spaces", "true");
-  } else {
-    editor.SetProperty("show_spaces", "false");
+  {
+    std::lock_guard<std::mutex> lk(term.grid_mutex);
+
+    float totalH = (float)term.grid.size() * charH;
+    float visibleH = canvasSize.y;
+
+    if (m_TermScrollToBottom || totalH <= visibleH)
+      m_TermScrollY = std::max(0.0f, totalH - visibleH);
+    m_TermScrollY = std::max(
+        0.0f, std::min(m_TermScrollY, std::max(0.0f, totalH - visibleH)));
+
+    int firstLine = (int)(m_TermScrollY / charH);
+    int lastLine = std::min((int)term.grid.size(),
+                            firstLine + (int)(visibleH / charH) + 2);
+
+    dl->PushClipRect(
+        canvasPos,
+        ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + canvasSize.y), true);
+
+    for (int lineIdx = firstLine; lineIdx < lastLine; ++lineIdx) {
+      const auto &line = term.grid[lineIdx];
+      float y = canvasPos.y + (float)(lineIdx - firstLine) * charH;
+
+      for (int colIdx = 0; colIdx < (int)line.size(); ++colIdx) {
+        const auto &cell = line[colIdx];
+        float x = canvasPos.x + colIdx * charW;
+
+        if ((cell.bg & 0xFF000000) != 0)
+          dl->AddRectFilled(ImVec2(x, y), ImVec2(x + charW, y + charH),
+                            cell.bg);
+
+        if (cell.ch != ' ') {
+          uint32_t rgba = cell.fg;
+          ImU32 imcol = IM_COL32((rgba >> 16) & 0xFF, (rgba >> 8) & 0xFF,
+                                 (rgba) & 0xFF, (rgba >> 24) & 0xFF);
+          char buf[2] = {cell.ch, 0};
+          dl->AddText(font, fsize, ImVec2(x, y), imcol, buf);
+        }
+
+        if (cell.underline)
+          dl->AddLine(ImVec2(x, y + charH - 1),
+                      ImVec2(x + charW, y + charH - 1), cell.fg);
+      }
+    }
+
+    if (termFocused && term.IsRunning()) {
+      static float cursorTimer = 0.0f;
+      cursorTimer += ImGui::GetIO().DeltaTime;
+      if (fmodf(cursorTimer, 1.0f) < 0.5f) {
+        int cr = term.cursor_row;
+        int cc = term.cursor_col;
+        if (cr >= firstLine && cr < lastLine) {
+          float cx = canvasPos.x + cc * charW;
+          float cy = canvasPos.y + (float)(cr - firstLine) * charH;
+          dl->AddRectFilled(ImVec2(cx, cy), ImVec2(cx + charW, cy + charH),
+                            IM_COL32(255, 255, 255, 180));
+        }
+      }
+    }
+
+    dl->PopClipRect();
+    term.grid_dirty = false;
   }
 
-  if (show_scrollbar_minimap_) {
-    editor.SetProperty("show_scrollbar_minimap", "true");
-  } else {
-    editor.SetProperty("show_scrollbar_minimap", "false");
-  }
-
-  if (show_minimap_) {
-    editor.SetProperty("show_minimap", "true");
-  } else {
-    editor.SetProperty("show_minimap", "false");
-  }
-
-  if (word_wrap_) {
-    editor.SetProperty("word_wrap", "true");
-  } else {
-    editor.SetProperty("word_wrap", "false");
-  }
-
-  if (line_folding_) {
-    editor.SetProperty("line_folding", "true");
-  } else {
-    editor.SetProperty("line_folding", "false");
-  }
-
-  if (m_RefreshReady) {
-    RefreshFile();
-    editor.SetProperty("refresh_pending", "true");
-    m_RefreshReady = false;
-  }
+  CherryStyle::PopFontSize();
+  Cherry::PopFont();
 
   CherryApp.PopComponentPool();
 }

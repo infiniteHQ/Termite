@@ -1,5 +1,6 @@
 #pragma once
 #include "core/texteditor.h"
+#include "terminal.hpp"
 #include <vxcore/include/vortex.h>
 #include <vxcore/include/vortex_internals.h>
 
@@ -114,7 +115,11 @@ private:
   std::string m_FilePath;
   FileTypes m_Type;
 
-  // Editor actions
+  std::string m_TermInput;
+  float m_TermScrollY = 0.0f;
+  bool m_TermScrollToBottom = true;
+  ImFont *m_TermFont = nullptr;
+
   bool m_FindPending = false;
   bool m_UndoPending = false;
   bool m_RedoPending = false;
@@ -124,7 +129,6 @@ private:
   bool m_FileEdited = true;
   bool m_FileUpdated = true;
 
-  // Editor flags
   bool m_SaveReady = false;
   bool m_RefreshReady = false;
 
@@ -135,7 +139,9 @@ private:
   bool word_wrap_ = false;
   bool line_folding_ = false;
   std::filesystem::file_time_type m_LastWriteTime{};
-
+  TerminalSystem term;
+  float buffer_size;
+  int total_lines;
   // Cherry
   std::shared_ptr<Cherry::AppWindow> m_AppWindow;
   ComponentsPool m_ComponentPool;
