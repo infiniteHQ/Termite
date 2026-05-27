@@ -1,5 +1,4 @@
 #pragma once
-#include "core/texteditor.h"
 #include "terminal.hpp"
 #include <vxcore/include/vortex.h>
 #include <vxcore/include/vortex_internals.h>

@@ -1,4 +1,4 @@
-#include "text_editor.hpp"
+#include "terminal_window.hpp"
 #include "../../../src/module.hpp"
 
 #include <filesystem>

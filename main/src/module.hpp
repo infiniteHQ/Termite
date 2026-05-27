@@ -1,4 +1,4 @@
-#include "../ui/instances/text_editor/text_editor.hpp"
+#include "../ui/instances/terminal/terminal_window.hpp"
 #include <vxcore/include/vortex.h>
 #include <vxcore/include/vortex_internals.h>
 #include <vxgui/editor/main/editor.hpp>
