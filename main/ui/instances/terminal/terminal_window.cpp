@@ -57,7 +57,6 @@ void TermiteAppWindow::PlusMinuxWidget(bool plus) {
 TermiteAppWindow::TermiteAppWindow(const std::string &name) {
   m_AppWindow = std::make_shared<Cherry::AppWindow>(name, name);
   term.Start();
-  DefineWindowIcon();
   m_AppWindow->SetLeftMenubarCallback([this]() { RenderMenubar(); });
   m_AppWindow->SetRightMenubarCallback([this]() { RenderRightMenubar(); });
   m_AppWindow->SetLeftBottombarCallback([this]() { RenderBottombar(); });
@@ -70,88 +69,10 @@ TermiteAppWindow::TermiteAppWindow(const std::string &name) {
 
   std::shared_ptr<Cherry::AppWindow> win = m_AppWindow;
 
-  RefreshFile();
-
   this->ctx = vxe::get_current_context();
 }
 
 void TermiteAppWindow::SetLanguage(const std::string &name) {}
-
-// TODO: Let the user customize icons with custom vortex events
-// TODO: Let the user desactivate this feature and always show icons/edit.png
-void TermiteAppWindow::DefineWindowIcon() {
-  switch (m_Type) {
-  case FileTypes::File_CPP: {
-    m_AppWindow->SetIcon(
-        Termite::GetPath("resources/icons/window_icons/cpp.png"));
-    break;
-  }
-  case FileTypes::File_C: {
-    m_AppWindow->SetIcon(
-        Termite::GetPath("resources/icons/window_icons/c.png"));
-    break;
-  }
-  case FileTypes::File_HPP: {
-    m_AppWindow->SetIcon(
-        Termite::GetPath("resources/icons/window_icons/hpp.png"));
-    break;
-  }
-  case FileTypes::File_H: {
-    m_AppWindow->SetIcon(
-        Termite::GetPath("resources/icons/window_icons/h.png"));
-    break;
-  }
-  case FileTypes::File_LUA: {
-    m_AppWindow->SetIcon(
-        Termite::GetPath("resources/icons/window_icons/lua.png"));
-    break;
-  }
-  default: {
-    m_AppWindow->SetIcon(Termite::GetPath("resources/icons/edit.png"));
-    break;
-  }
-  }
-}
-
-std::string TermiteAppWindow::GetFileTypeStr(FileTypes type) {
-  switch (type) {
-  // Web and Markup
-  case FileTypes::File_XML:
-    return "file_xml";
-
-  // Config
-  case FileTypes::File_CFG:
-    return "file_cfg";
-  case FileTypes::File_JSON:
-    return "file_json";
-  case FileTypes::File_YAML:
-    return "file_yaml";
-  case FileTypes::File_INI:
-    return "file_ini";
-
-  // Documents
-  case FileTypes::File_TXT:
-    return "file_txt";
-  case FileTypes::File_MD:
-    return "file_md";
-
-  // Miscellaneous
-  case FileTypes::File_LOG:
-    return "file_log";
-  case FileTypes::File_BACKUP:
-    return "file_backup";
-  case FileTypes::File_TEMP:
-    return "file_temp";
-  case FileTypes::File_DATA:
-    return "file_data";
-
-  // Other
-  case FileTypes::File_UNKNOWN:
-    return "file_unknown";
-  }
-
-  return "file_unknown"; // fallback
-}
 
 std::shared_ptr<Cherry::AppWindow> &TermiteAppWindow::GetAppWindow() {
   return m_AppWindow;
@@ -176,43 +97,7 @@ void TermiteAppWindow::SetupRenderCallback() {
 void TermiteAppWindow::RenderMenubar() {
   CherryGUI::SetCursorPosX(CherryGUI::GetCursorPosX() + 3.0f);
 
-  if (!m_FileEdited) {
-    CherryGUI::BeginDisabled();
-  }
-
-  CherryNextComponent.SetProperty("padding_y", "5.5f");
-  CherryNextComponent.SetProperty("padding_x", "6.0f");
-  CherryNextComponent.SetProperty("size_x", "18");
-  CherryNextComponent.SetProperty("size_y", "18");
-  if (CherryKit::ButtonImage(Termite::GetPath("/resources/icons/icon_save.png"))
-          .GetDataAs<bool>("isClicked")) {
-    m_SavePending = true;
-  }
-
-  if (!m_FileEdited) {
-    CherryGUI::EndDisabled();
-  }
-
-  CherryNextComponent.SetProperty("padding_y", "5.5f");
-  CherryNextComponent.SetProperty("padding_x", "6.0f");
-  CherryNextComponent.SetProperty("size_x", "18");
-  CherryNextComponent.SetProperty("size_y", "18");
-  if (CherryKit::ButtonImage(
-          Termite::GetPath("/resources/icons/icon_refresh.png"))
-          .GetDataAs<bool>("isClicked")) {
-    m_RefreshReady = true;
-  }
-
   CherryKit::Separator();
-
-  CherryNextComponent.SetProperty("padding_y", "6.0f");
-  CherryNextComponent.SetProperty("padding_x", "10.0f");
-  if (CherryKit::ButtonImageText(
-          "Find",
-          Termite::GetPath("/resources/icons/icon_magnifying_glass.png"))
-          .GetDataAs<bool>("isClicked")) {
-    m_FindPending = true;
-  }
 
   CherryNextComponent.SetProperty("padding_y", "6.0f");
   CherryNextComponent.SetProperty("padding_x", "10.0f");
@@ -231,249 +116,8 @@ void TermiteAppWindow::RenderMenubar() {
   }
 }
 
-void TermiteAppWindow::RefreshFile() {
-  m_FileEdited = false;
-  m_FileUpdated = true;
-  try {
-    if (m_FilePath.empty()) {
-      std::cerr << "RefreshFile: no file path set\n";
-      return;
-    }
-
-    namespace fs = std::filesystem;
-    std::error_code ec;
-
-    if (!fs::exists(m_FilePath, ec)) {
-      std::cerr << "RefreshFile: file does not exist: " << m_FilePath << "\n";
-      return;
-    }
-
-    std::ifstream ifs(m_FilePath, std::ios::binary);
-    if (!ifs.is_open()) {
-      std::cerr << "RefreshFile: failed to open file: " << m_FilePath << "\n";
-      return;
-    }
-
-    std::string content;
-    ifs.seekg(0, std::ios::end);
-    auto size = ifs.tellg();
-    if (size > 0) {
-      content.resize(static_cast<size_t>(size));
-      ifs.seekg(0, std::ios::beg);
-      ifs.read(&content[0], size);
-    } else {
-      content.clear();
-    }
-    ifs.close();
-
-    if (content != m_FileEditBuffer) {
-      m_FileEditBuffer = std::move(content);
-    }
-
-    m_LastWriteTime = fs::last_write_time(m_FilePath, ec);
-
-  } catch (const std::exception &e) {
-    std::cerr << "RefreshFile: exception: " << e.what() << "\n";
-  }
-}
-
-void TermiteAppWindow::SaveFile() {
-  m_FileEdited = false;
-  m_FileUpdated = true;
-
-  try {
-    if (m_FilePath.empty()) {
-      std::cerr << "SaveFile: no file path set\n";
-      return;
-    }
-
-    namespace fs = std::filesystem;
-    std::error_code ec;
-
-    fs::path target = m_FilePath;
-    fs::path parent = target.parent_path();
-    if (!parent.empty() && !fs::exists(parent, ec)) {
-      if (!fs::create_directories(parent, ec)) {
-        std::cerr << "SaveFile: unable to create parent directories: " << parent
-                  << " (" << ec.message() << ")\n";
-        return;
-      }
-    }
-
-    auto timestamp =
-        std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    fs::path tempPath = parent / (target.filename().string() + ".tmp." +
-                                  std::to_string(timestamp));
-
-    {
-      std::ofstream ofs(tempPath, std::ios::binary | std::ios::trunc);
-      if (!ofs.is_open()) {
-        std::cerr << "SaveFile: failed to open temp file for writing: "
-                  << tempPath << "\n";
-        std::error_code rmec;
-        fs::remove(tempPath, rmec);
-        return;
-      }
-
-      ofs.write(m_FileEditBuffer.data(),
-                static_cast<std::streamsize>(m_FileEditBuffer.size()));
-      if (!ofs) {
-        std::cerr << "SaveFile: write failed to temp file: " << tempPath
-                  << "\n";
-        ofs.close();
-        fs::remove(tempPath, ec);
-        return;
-      }
-      ofs.flush();
-      ofs.close();
-    }
-
-    if (fs::exists(target, ec)) {
-      std::error_code removeEc;
-      fs::remove(target, removeEc);
-      std::error_code renameEc;
-      fs::rename(tempPath, target, renameEc);
-      if (renameEc) {
-        std::error_code copyEc;
-        fs::copy_file(tempPath, target, fs::copy_options::overwrite_existing,
-                      copyEc);
-        if (copyEc) {
-          std::cerr << "SaveFile: failed to replace target file: " << target
-                    << " (rename: " << renameEc.message()
-                    << ", copy: " << copyEc.message() << ")\n";
-          fs::remove(tempPath, ec);
-          return;
-        }
-        fs::remove(tempPath, ec);
-      }
-    } else {
-      std::error_code renameEc;
-      fs::rename(tempPath, target, renameEc);
-      if (renameEc) {
-        std::error_code copyEc;
-        fs::copy_file(tempPath, target, fs::copy_options::none, copyEc);
-        if (copyEc) {
-          std::cerr << "SaveFile: failed to move temp file to target: "
-                    << target << " (rename: " << renameEc.message()
-                    << ", copy: " << copyEc.message() << ")\n";
-          fs::remove(tempPath, ec);
-          return;
-        }
-        fs::remove(tempPath, ec);
-      }
-    }
-  } catch (const std::exception &e) {
-    std::cerr << "SaveFile: exception: " << e.what() << "\n";
-  }
-}
-
-void TermiteAppWindow::Undo() { m_UndoPending = true; }
-void TermiteAppWindow::Redo() { m_RedoPending = true; }
-
-FileTypes TermiteAppWindow::detect_file(const std::string &path) {
-  static const std::unordered_map<std::string, FileTypes> extension_map = {
-      // Web and Markup
-      {"xml", FileTypes::File_XML},
-      {"json", FileTypes::File_JSON},
-      {"yaml", FileTypes::File_YAML},
-      {"yml", FileTypes::File_YAML},
-      {"cpp", FileTypes::File_CPP},
-      {"hpp", FileTypes::File_HPP},
-      {"lua", FileTypes::File_LUA},
-      {"python", FileTypes::File_PYTHON},
-      {"c", FileTypes::File_C},
-      {"h", FileTypes::File_H},
-      {"cs", FileTypes::File_CS},
-
-      // Config
-      {"cfg", FileTypes::File_CFG},
-      {"ini", FileTypes::File_INI},
-      {"env", FileTypes::File_INI},
-
-      // Documents
-      {"txt", FileTypes::File_TXT},
-      {"md", FileTypes::File_MD},
-      {"rst", FileTypes::File_MD},
-
-      // Miscellaneous
-      {"log", FileTypes::File_LOG},
-      {"bak", FileTypes::File_BACKUP},
-      {"tmp", FileTypes::File_TEMP},
-      {"dat", FileTypes::File_DATA},
-  };
-
-  std::string extension = get_extension(path);
-  auto it = extension_map.find(extension);
-  if (it != extension_map.end()) {
-    return it->second;
-  } else {
-    return FileTypes::File_UNKNOWN;
-  }
-}
-
-void TermiteAppWindow::RenderCustomMenu() { CherryGUI::Text("Helo"); }
-
 void TermiteAppWindow::Render() {
-  vxe::push_custom_menu("TextEdit", [this]() { RenderCustomMenu(); });
-
   CherryApp.PushComponentPool(&m_ComponentPool);
-  bool isWindowFocused =
-      CherryGUI::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-  bool isWindowHovered =
-      CherryGUI::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
-  bool ctrl = CherryGUI::IsKeyCtrlPressed();
-
-  bool fPressed = CherryGUI::IsKeyPressed(ImGuiKey_F);
-  bool vPressed = CherryGUI::IsKeyPressed(ImGuiKey_V);
-  bool cPressed = CherryGUI::IsKeyPressed(ImGuiKey_C);
-  bool sPressed = CherryGUI::IsKeyPressed(ImGuiKey_S);
-  bool yPressed = CherryGUI::IsKeyPressed(ImGuiKey_Y);
-  bool zeroPressed = CherryGUI::IsKeyPressed(ImGuiKey_0);
-  bool plusPressed = CherryGUI::IsKeyPressed(ImGuiKey_KeypadAdd) ||
-                     CherryGUI::IsKeyPressed(ImGuiKey_Equal);
-  bool minusPressed = CherryGUI::IsKeyPressed(ImGuiKey_KeypadSubtract) ||
-                      CherryGUI::IsKeyPressed(ImGuiKey_Minus);
-
-  float wheel = CherryGUI::GetMouseWheel();
-
-  if (isWindowFocused && ctrl) {
-    if (vPressed) {
-      m_PastePending = true;
-    }
-    if (cPressed) {
-      m_CopyPending = true;
-    }
-    if (sPressed) {
-      m_SavePending = true;
-    }
-    if (yPressed) {
-      m_RedoPending = true;
-    }
-    if (fPressed) {
-      m_FindPending = true;
-    }
-
-    if (plusPressed) {
-
-      ZoomIn();
-    }
-    if (minusPressed) {
-      ZoomOut();
-    }
-    if (zeroPressed) {
-      ResetZoom();
-    }
-  }
-
-  if (isWindowHovered && ctrl && wheel != 0.0f) {
-    if (wheel > 0.0f) {
-      ZoomIn();
-    } else {
-      ZoomOut();
-    }
-  }
-
-  auto test = CherryGUI::GetContentRegionAvail();
 
   auto avail = CherryGUI::GetContentRegionAvail();
 
@@ -660,6 +304,22 @@ void TermiteAppWindow::Render() {
   Cherry::PopFont();
 
   CherryApp.PopComponentPool();
+}
+
+void TermiteAppWindow::ZoomIn() {
+  m_TextSize += 0.05f;
+  if (m_TextSize > 1.15f)
+    m_TextSize = 1.15f;
+}
+
+void TermiteAppWindow::ZoomOut() {
+  m_TextSize -= 0.05f;
+  if (m_TextSize < 0.35f)
+    m_TextSize = 0.35f;
+}
+
+void TermiteAppWindow::ResetZoom() {
+  m_TextSize = 0.50f; // 100%
 }
 
 void TermiteAppWindow::RenderRightMenubar() {
