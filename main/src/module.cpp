@@ -10,7 +10,7 @@ void Termite::DestroyContext() { free(CTermite); }
 void Termite::StartTerminal() {
   // TODO: Custom names with dynamic state of terminals (to implement with
   // Cherry Locales systeme)
-  auto inst = ModuleUI::TextEditorAppWindow::Create("Terminal");
+  auto inst = ModuleUI::TermiteAppWindow::Create("Terminal");
   Cherry::AddAppWindow(inst->GetAppWindow());
   CTermite->m_text_editor_instances.push_back(inst);
 }

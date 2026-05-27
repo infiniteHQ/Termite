@@ -9,7 +9,7 @@
 namespace Termite {
 struct Context {
   std::shared_ptr<ModuleInterface> m_interface;
-  std::vector<std::shared_ptr<ModuleUI::TextEditorAppWindow>>
+  std::vector<std::shared_ptr<ModuleUI::TermiteAppWindow>>
       m_text_editor_instances;
 };
 } // namespace Termite

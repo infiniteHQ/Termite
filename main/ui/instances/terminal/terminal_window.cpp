@@ -7,7 +7,7 @@
 
 namespace ModuleUI {
 
-void TextEditorAppWindow::PlusMinuxWidget(bool plus) {
+void TermiteAppWindow::PlusMinuxWidget(bool plus) {
   ImVec2 btn_pos = CherryGUI::GetCursorScreenPos();
   float btn_size = 22.0f;
   float rounding = 4.0f;
@@ -54,7 +54,7 @@ void TextEditorAppWindow::PlusMinuxWidget(bool plus) {
   }
 }
 
-TextEditorAppWindow::TextEditorAppWindow(const std::string &name) {
+TermiteAppWindow::TermiteAppWindow(const std::string &name) {
   m_AppWindow = std::make_shared<Cherry::AppWindow>(name, name);
   term.Start();
   DefineWindowIcon();
@@ -75,11 +75,11 @@ TextEditorAppWindow::TextEditorAppWindow(const std::string &name) {
   this->ctx = vxe::get_current_context();
 }
 
-void TextEditorAppWindow::SetLanguage(const std::string &name) {}
+void TermiteAppWindow::SetLanguage(const std::string &name) {}
 
 // TODO: Let the user customize icons with custom vortex events
 // TODO: Let the user desactivate this feature and always show icons/edit.png
-void TextEditorAppWindow::DefineWindowIcon() {
+void TermiteAppWindow::DefineWindowIcon() {
   switch (m_Type) {
   case FileTypes::File_CPP: {
     m_AppWindow->SetIcon(
@@ -113,7 +113,7 @@ void TextEditorAppWindow::DefineWindowIcon() {
   }
 }
 
-std::string TextEditorAppWindow::GetFileTypeStr(FileTypes type) {
+std::string TermiteAppWindow::GetFileTypeStr(FileTypes type) {
   switch (type) {
   // Web and Markup
   case FileTypes::File_XML:
@@ -153,19 +153,18 @@ std::string TextEditorAppWindow::GetFileTypeStr(FileTypes type) {
   return "file_unknown"; // fallback
 }
 
-std::shared_ptr<Cherry::AppWindow> &TextEditorAppWindow::GetAppWindow() {
+std::shared_ptr<Cherry::AppWindow> &TermiteAppWindow::GetAppWindow() {
   return m_AppWindow;
 }
 
-std::shared_ptr<TextEditorAppWindow>
-TextEditorAppWindow::Create(const std::string &name) {
-  auto instance =
-      std::shared_ptr<TextEditorAppWindow>(new TextEditorAppWindow(name));
+std::shared_ptr<TermiteAppWindow>
+TermiteAppWindow::Create(const std::string &name) {
+  auto instance = std::shared_ptr<TermiteAppWindow>(new TermiteAppWindow(name));
   instance->SetupRenderCallback();
   return instance;
 }
 
-void TextEditorAppWindow::SetupRenderCallback() {
+void TermiteAppWindow::SetupRenderCallback() {
   auto self = shared_from_this();
   m_AppWindow->SetRenderCallback([self]() {
     if (self) {
@@ -174,7 +173,7 @@ void TextEditorAppWindow::SetupRenderCallback() {
   });
 }
 
-void TextEditorAppWindow::RenderMenubar() {
+void TermiteAppWindow::RenderMenubar() {
   CherryGUI::SetCursorPosX(CherryGUI::GetCursorPosX() + 3.0f);
 
   if (!m_FileEdited) {
@@ -232,7 +231,7 @@ void TextEditorAppWindow::RenderMenubar() {
   }
 }
 
-void TextEditorAppWindow::RefreshFile() {
+void TermiteAppWindow::RefreshFile() {
   m_FileEdited = false;
   m_FileUpdated = true;
   try {
@@ -278,7 +277,7 @@ void TextEditorAppWindow::RefreshFile() {
   }
 }
 
-void TextEditorAppWindow::SaveFile() {
+void TermiteAppWindow::SaveFile() {
   m_FileEdited = false;
   m_FileUpdated = true;
 
@@ -368,10 +367,10 @@ void TextEditorAppWindow::SaveFile() {
   }
 }
 
-void TextEditorAppWindow::Undo() { m_UndoPending = true; }
-void TextEditorAppWindow::Redo() { m_RedoPending = true; }
+void TermiteAppWindow::Undo() { m_UndoPending = true; }
+void TermiteAppWindow::Redo() { m_RedoPending = true; }
 
-FileTypes TextEditorAppWindow::detect_file(const std::string &path) {
+FileTypes TermiteAppWindow::detect_file(const std::string &path) {
   static const std::unordered_map<std::string, FileTypes> extension_map = {
       // Web and Markup
       {"xml", FileTypes::File_XML},
@@ -412,9 +411,9 @@ FileTypes TextEditorAppWindow::detect_file(const std::string &path) {
   }
 }
 
-void TextEditorAppWindow::RenderCustomMenu() { CherryGUI::Text("Helo"); }
+void TermiteAppWindow::RenderCustomMenu() { CherryGUI::Text("Helo"); }
 
-void TextEditorAppWindow::Render() {
+void TermiteAppWindow::Render() {
   vxe::push_custom_menu("TextEdit", [this]() { RenderCustomMenu(); });
 
   CherryApp.PushComponentPool(&m_ComponentPool);
@@ -663,7 +662,7 @@ void TextEditorAppWindow::Render() {
   CherryApp.PopComponentPool();
 }
 
-void TextEditorAppWindow::RenderRightMenubar() {
+void TermiteAppWindow::RenderRightMenubar() {
   CherryGUI::PushStyleColor(ImGuiCol_Border, ImVec4(0.4f, 0.4f, 0.4f, 0.7f));
 
   if (m_TextSize > m_TextSizeMax)
@@ -747,7 +746,7 @@ void TextEditorAppWindow::RenderRightMenubar() {
   CherryGUI::SetCursorPosY(CherryGUI::GetCursorPosY() - 1.5f);
 }
 
-void TextEditorAppWindow::RenderBottombar() {
+void TermiteAppWindow::RenderBottombar() {
   std::string posText = std::to_string(m_CurrentLine + 1) + "/" +
                         std::to_string(m_CurrentColumn + 1);
   std::string linesText = std::to_string(m_TotalLines) + " lines";

@@ -44,16 +44,15 @@ enum class FileTypes {
   File_UNKNOWN,
 };
 
-class TextEditorAppWindow
-    : public std::enable_shared_from_this<TextEditorAppWindow> {
+class TermiteAppWindow : public std::enable_shared_from_this<TermiteAppWindow> {
 public:
-  TextEditorAppWindow(const std::string &name);
+  TermiteAppWindow(const std::string &name);
 
   void menubar();
   FileTypes detect_file(const std::string &path);
   std::string GetFileTypeStr(FileTypes type);
   std::shared_ptr<Cherry::AppWindow> &GetAppWindow();
-  static std::shared_ptr<TextEditorAppWindow> Create(const std::string &name);
+  static std::shared_ptr<TermiteAppWindow> Create(const std::string &name);
   void SetupRenderCallback();
   void Render();
   void RenderMenubar();
