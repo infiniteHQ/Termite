@@ -18,11 +18,8 @@ public:
   void Render();
   void RenderMenubar();
   void RenderRightMenubar();
-  void RenderBottombar();
 
-  void SetLanguage(const std::string &name);
-  void AutoSetLanguage();
-
+  // zoom
   void PlusMinuxWidget(bool plus);
   void ZoomIn();
   void ZoomOut();
@@ -37,24 +34,10 @@ private:
   bool m_TermScrollToBottom = true;
   ImFont *m_TermFont = nullptr;
 
-  bool m_SaveReady = false;
-  bool m_RefreshReady = false;
   float m_TextSize = 0.5f;
   float m_TextSizeMin = 0.3f;
   float m_TextSizeMax = 2.0f;
 
-  int m_CurrentLine = 0;
-  int m_CurrentColumn = 0;
-  int m_TotalLines = 0;
-  std::string m_CurrentLanguageDef = "";
-  bool m_CanOverrite = false;
-
-  bool m_AutoRefresh = false;
-  bool show_spaces_ = false;
-  bool show_scrollbar_minimap_ = false;
-  bool show_minimap_ = false;
-  bool word_wrap_ = false;
-  bool line_folding_ = false;
   std::filesystem::file_time_type m_LastWriteTime{};
   TerminalSystem term;
   float buffer_size;

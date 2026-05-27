@@ -59,7 +59,6 @@ TermiteAppWindow::TermiteAppWindow(const std::string &name) {
   term.Start();
   m_AppWindow->SetLeftMenubarCallback([this]() { RenderMenubar(); });
   m_AppWindow->SetRightMenubarCallback([this]() { RenderRightMenubar(); });
-  m_AppWindow->SetLeftBottombarCallback([this]() { RenderBottombar(); });
   m_AppWindow->SetSaveMode(true);
 
   m_AppWindow->m_CloseCallback = [=]() {
@@ -71,8 +70,6 @@ TermiteAppWindow::TermiteAppWindow(const std::string &name) {
 
   this->ctx = vxe::get_current_context();
 }
-
-void TermiteAppWindow::SetLanguage(const std::string &name) {}
 
 std::shared_ptr<Cherry::AppWindow> &TermiteAppWindow::GetAppWindow() {
   return m_AppWindow;
@@ -384,16 +381,9 @@ void TermiteAppWindow::RenderRightMenubar() {
     CherryNextComponent.SetProperty("padding_x", "2");
     CherryNextComponent.SetProperty("padding_y", "4");
 
-    auto cmp = CherryKit::TableSimple(
-        CherryID("Parameters"), "ParamTable",
-        {{CherryKit::KeyValCustom("Zoom", zoomRender)},
-         {CherryKit::KeyValBool("Auto refresh", &m_AutoRefresh)},
-         {CherryKit::KeyValBool("Show spaces", &show_spaces_)},
-         {CherryKit::KeyValBool("Show scrollbar minimap",
-                                &show_scrollbar_minimap_)},
-         {CherryKit::KeyValBool("Show Minimap", &show_minimap_)},
-         {CherryKit::KeyValBool("Word wrapping", &word_wrap_)},
-         {CherryKit::KeyValBool("Line Folding", &line_folding_)}});
+    auto cmp =
+        CherryKit::TableSimple(CherryID("Parameters"), "ParamTable",
+                               {{CherryKit::KeyValCustom("Zoom", zoomRender)}});
 
     CherryGUI::EndPopup();
   }
@@ -405,61 +395,4 @@ void TermiteAppWindow::RenderRightMenubar() {
   CherryGUI::PopStyleColor();
   CherryGUI::SetCursorPosY(CherryGUI::GetCursorPosY() - 1.5f);
 }
-
-void TermiteAppWindow::RenderBottombar() {
-  std::string posText = std::to_string(m_CurrentLine + 1) + "/" +
-                        std::to_string(m_CurrentColumn + 1);
-  std::string linesText = std::to_string(m_TotalLines) + " lines";
-  std::string languageText = m_CurrentLanguageDef;
-
-  Cherry::PushFont("JetBrainsMono");
-  CherryStyle::PushFontSize(0.5f);
-  CherryNextProp("color_text", "#898989");
-  CherryStyle::AddMarginX(8.0f);
-  CherryStyle::RemoveMarginY(8.0f);
-  CherryKit::TextSimple(posText);
-
-  CherryStyle::AddMarginX(8.0f);
-  CherryGUI::PushStyleColor(ImGuiCol_Separator, Cherry::HexToRGBA("#454545"));
-  CherryGUI::Separator();
-  CherryGUI::PopStyleColor();
-
-  CherryStyle::AddMarginX(8.0f);
-  CherryNextProp("color_text", "#898989");
-  CherryKit::TextSimple(linesText);
-
-  CherryStyle::AddMarginX(8.0f);
-  CherryGUI::PushStyleColor(ImGuiCol_Separator, Cherry::HexToRGBA("#454545"));
-  CherryGUI::Separator();
-  CherryGUI::PopStyleColor();
-
-  CherryStyle::AddMarginX(8.0f);
-  CherryNextProp("color_text", "#898989");
-  CherryKit::TextSimple(languageText);
-
-  if (m_TextSize != 0.5) {
-    int currentPercent = static_cast<int>(std::round(m_TextSize * 200.0f));
-    CherryStyle::AddMarginX(8.0f);
-    CherryGUI::PushStyleColor(ImGuiCol_Separator, Cherry::HexToRGBA("#454545"));
-    CherryGUI::Separator();
-    CherryGUI::PopStyleColor();
-
-    CherryStyle::AddMarginX(8.0f);
-    CherryNextProp("color_text", "#898989");
-    CherryKit::TextSimple(std::to_string(currentPercent) + "%%");
-  }
-
-  if (m_AutoRefresh) {
-    CherryStyle::AddMarginX(8.0f);
-    CherryGUI::PushStyleColor(ImGuiCol_Separator, Cherry::HexToRGBA("#454545"));
-    CherryGUI::Separator();
-    CherryGUI::PopStyleColor();
-
-    CherryStyle::AddMarginX(8.0f);
-    CherryKit::TextSimple("AutoRefresh");
-  }
-  CherryStyle::PopFontSize();
-  Cherry::PopFont();
-}
-
 }; // namespace ModuleUI
